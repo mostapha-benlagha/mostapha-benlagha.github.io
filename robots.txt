@@ -1,11 +1,17 @@
 User-agent: *
 Allow: /
 
+# Host declaration
+Host: mostapha-benlagha.github.io
+
 # Sitemap
 Sitemap: https://mostapha-benlagha.github.io/sitemap.xml
 
 # Crawl-delay
 Crawl-delay: 1
+
+# Additional sitemap information
+# XML sitemap indicates all URLs are valid for indexing
 
 # Disallow specific paths (if any)
 # Disallow: /admin/
@@ -29,3 +35,33 @@ Allow: /
 
 User-agent: YandexBot
 Allow: /
+
+# Additional search engines
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
+# Performance optimizations
+User-agent: Googlebot
+Crawl-delay: 1
+
+User-agent: Bingbot
+Crawl-delay: 1
+
+User-agent: Slurp
+Crawl-delay: 2
+
+# Social media bots (faster indexing)
+User-agent: facebookexternalhit
+Crawl-delay: 0
+
+User-agent: WhatsApp
+Crawl-delay: 0
+
+User-agent: TelegramBot
+Crawl-delay: 0
