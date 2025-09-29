@@ -4681,6 +4681,543 @@
     // Initialize GitLab activity grid
     document.addEventListener("DOMContentLoaded", generateGitLabActivityGrid);
   </script>
+
+  <!-- Sound System Script -->
+  <script>
+    // Sound Management System
+    class SoundManager {
+      constructor() {
+        this.audioContext = null;
+        this.soundsEnabled = true;
+        this.useWebAudio = true;
+        this.initAudioContext();
+      }
+
+      async initAudioContext() {
+        // Initialize audio context on first user interaction
+        document.addEventListener('click', () => this.enableAudio(), { once: true });
+        document.addEventListener('keydown', () => this.enableAudio(), { once: true });
+        document.addEventListener('touchstart', () => this.enableAudio(), { once: true });
+      }
+
+      async enableAudio() {
+        if (!this.audioContext) {
+          try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            console.log('Audio context created:', this.audioContext.state);
+            
+            // Resume context if suspended
+            if (this.audioContext.state === 'suspended') {
+              await this.audioContext.resume();
+              console.log('Audio context resumed:', this.audioContext.state);
+            }
+            
+            // Test the audio context
+            await this.testAudioContext();
+            
+          } catch (error) {
+            console.log('Audio context failed:', error);
+            this.soundsEnabled = false;
+            this.useWebAudio = false;
+          }
+        }
+      }
+
+      async testAudioContext() {
+        if (!this.audioContext) return;
+        
+        try {
+          // Test with a simple beep
+          const oscillator = this.audioContext.createOscillator();
+          const gainNode = this.audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(this.audioContext.destination);
+          
+          oscillator.frequency.value = 440;
+          oscillator.type = 'sine';
+          
+          gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
+          
+          oscillator.start(this.audioContext.currentTime);
+          oscillator.stop(this.audioContext.currentTime + 0.1);
+          
+          console.log('Audio test successful - sound is working!');
+        } catch (error) {
+          console.log('Audio test failed:', error);
+          this.useWebAudio = false;
+        }
+      }
+
+      playClick() {
+        if (!this.soundsEnabled || !this.audioContext) return;
+        
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        // Create a simple satisfying click sound
+        oscillator.frequency.setValueAtTime(800, this.audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(1200, this.audioContext.currentTime + 0.05);
+        
+        gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
+        
+        oscillator.type = 'square';
+        oscillator.start();
+        oscillator.stop(this.audioContext.currentTime + 0.1);
+      }
+
+      playFallbackClick() {
+        // Create a simple audio data URL for click sound
+        const sampleRate = 44100;
+        const duration = 0.1; // 100ms
+        
+        // Generate click sound data
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate });
+        const bufferSize = sampleRate * duration;
+        const buffer = audioContext.createBuffer(1, bufferSize, sampleRate);
+        const data = buffer.getChannelData(0);
+        
+        // Generate a click waveform
+        for (let i = 0; i < bufferSize; i++) {
+          const t = i / sampleRate;
+          const envelope = Math.exp(-t * 30); // Quick decay
+          data[i] = envelope * Math.sin(2 * Math.PI * 800 * t) * 0.3;
+        }
+        
+        // Play the sound
+        const source = audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioContext.destination);
+        source.start();
+      }
+
+      createClickSound(startTime) {
+        const duration = 0.08;
+        
+        // Main click oscillator
+        const oscillator1 = this.audioContext.createOscillator();
+        const gainNode1 = this.audioContext.createGain();
+        const filter1 = this.audioContext.createBiquadFilter();
+        
+        oscillator1.connect(filter1);
+        filter1.connect(gainNode1);
+        gainNode1.connect(this.audioContext.destination);
+        
+        oscillator1.type = 'square';
+        oscillator1.frequency.setValueAtTime(1200, startTime);
+        oscillator1.frequency.exponentialRampToValueAtTime(400, startTime + duration * 0.5);
+        
+        filter1.type = 'lowpass';
+        filter1.frequency.setValueAtTime(2000, startTime);
+        filter1.frequency.exponentialRampToValueAtTime(800, startTime + duration);
+        
+        const volume = (this.volumeMultiplier || 1.0) * 0.4;
+        gainNode1.gain.setValueAtTime(volume, startTime);
+        gainNode1.gain.exponentialRampToValueAtTime(volume * 0.025, startTime + duration);
+        
+        oscillator1.start(startTime);
+        oscillator1.stop(startTime + duration);
+      }
+
+      createKickSound(startTime) {
+        const duration = 0.1;
+        
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        const filter = this.audioContext.createBiquadFilter();
+        
+        oscillator.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(80, startTime);
+        oscillator.frequency.exponentialRampToValueAtTime(40, startTime + duration * 0.3);
+        
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(100, startTime);
+        filter.frequency.exponentialRampToValueAtTime(60, startTime + duration);
+        
+        const volume = (this.volumeMultiplier || 1.0) * 0.3;
+        gainNode.gain.setValueAtTime(volume, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(volume * 0.003, startTime + duration);
+        
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+      }
+
+      createBellSound(startTime) {
+        const duration = 0.2;
+        
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        const filter = this.audioContext.createBiquadFilter();
+        
+        oscillator.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        oscillator.type = 'sin';
+        oscillator.frequency.setValueAtTime(800, startTime);
+        oscillator.frequency.exponentialRampToValueAtTime(1200, startTime + 0.01);
+        oscillator.frequency.exponentialRampToValueAtTime(600, startTime + duration * 0.5);
+        
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1000, startTime);
+        filter.Q.value = 30;
+        
+        const volume = (this.volumeMultiplier || 1.0) * 0.15;
+        gainNode.gain.setValueAtTime(volume, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(volume * 0.007, startTime + duration);
+        
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+      }
+
+      playHover() {
+        if (!this.soundsEnabled || !this.audioContext) return;
+        
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        // Create a gentle hover sound
+        oscillator.frequency.setValueAtTime(600, this.audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(900, this.audioContext.currentTime + 0.03);
+        
+        gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.06);
+        
+        oscillator.type = 'sine';
+        oscillator.start();
+        oscillator.stop(this.audioContext.currentTime + 0.06);
+      }
+
+      playFallbackHover() {
+        // Create a simple audio data URL for hover sound
+        const sampleRate = 44100;
+        const duration = 0.12; // 120ms
+        
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate });
+          const bufferSize = sampleRate * duration;
+          const buffer = audioContext.createBuffer(1, bufferSize, sampleRate);
+          const data = buffer.getChannelData(0);
+          
+          // Generate a hover waveform
+          for (let i = 0; i < bufferSize; i++) {
+            const t = i / sampleRate;
+            const envelope = Math.exp(-t * 8); // Slower decay
+            const frequency = 400 + (t * 200); // Frequency sweep
+            data[i] = envelope * Math.sin(2 * Math.PI * frequency * t) * 0.2;
+          }
+          
+          // Play the sound
+          const source = audioContext.createBufferSource();
+          source.buffer = buffer;
+          source.connect(audioContext.destination);
+          source.start();
+        } catch (error) {
+          console.log('Fallback audio failed:', error);
+        }
+      }
+
+      createHoverSound(startTime) {
+        const duration = 0.12;
+        
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        const filter = this.audioContext.createBiquadFilter();
+        
+        oscillator.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(400, startTime);
+        oscillator.frequency.exponentialRampToValueAtTime(800, startTime + duration * 0.6);
+        oscillator.frequency.exponentialRampToValueAtTime(600, startTime + duration);
+        
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1000, startTime);
+        filter.frequency.exponentialRampToValueAtTime(1500, startTime + duration * 0.5);
+        filter.resonance.value = 8;
+        
+        const volume = (this.volumeMultiplier || 1.0) * 0.25;
+        gainNode.gain.setValueAtTime(volume, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(volume * 0.04, startTime + duration);
+        
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+      }
+
+      createHoverHarmonic(startTime) {
+        const duration = 0.1;
+        
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        const filter = this.audioContext.createBiquadFilter();
+        
+        oscillator.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(1200, startTime);
+        oscillator.frequency.exponentialRampToValueAtTime(1600, startTime + duration * 0.4);
+        
+        filter.type = 'highpass';
+        filter.frequency.setValueAtTime(800, startTime);
+        filter.resonance.value = 12;
+        
+        const volume = (this.volumeMultiplier || 1.0) * 0.08;
+        gainNode.gain.setValueAtTime(volume, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(volume * 0.0125, startTime + duration);
+        
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+      }
+
+      playAction(action = 'click') {
+        switch (action) {
+          case 'click':
+            this.playClick();
+            break;
+          case 'hover':
+            this.playHover();
+            break;
+        }
+      }
+
+      // Additional specialized sounds
+      playSuccess() {
+        if (!this.soundsEnabled || !this.audioContext) return;
+        
+        const now = this.audioContext.currentTime;
+        this.createSuccessChord(now);
+      }
+
+      createSuccessChord(startTime) {
+        const duration = 0.15;
+        
+        // Root note
+        this.createNote(startTime, 523.25, duration, 0.2); // C5
+        // Third
+        this.createNote(startTime, 659.25, duration * 0.7, 0.15); // E5
+        // Fifth
+        this.createNote(startTime, 783.99, duration * 0.5, 0.1); // G5
+        
+        setTimeout(() => {
+          if (this.audioContext) {
+            this.createNote(startTime + 0.1, 1046.50, duration * 0.3, 0.15); // C6
+          }
+        }, 100);
+      }
+
+      createNote(startTime, frequency, duration, volume) {
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        const filter = this.audioContext.createBiquadFilter();
+        
+        oscillator.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(frequency, startTime);
+        
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(frequency * 4, startTime);
+        
+        const adjustedVolume = (this.volumeMultiplier || 1.0) * volume;
+        gainNode.gain.setValueAtTime(adjustedVolume, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(adjustedVolume * 0.05, startTime + duration);
+        
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+      }
+
+      // Smooth volume control
+      playWithVolumeMultiplier(multiplier = 1.0) {
+        this.volumeMultiplier = multiplier;
+      }
+    }
+
+    // Initialize sound manager with volume adjustment
+    const soundManager = new SoundManager();
+    
+    // Set appropriate volume levels for better experience
+    soundManager.playWithVolumeMultiplier(0.7); // Slightly reduced volume for comfort
+
+    // Add debugging info
+    console.log('Sound Manager initialized');
+    
+    // Create a test button for debugging
+    function createSoundTestButton() {
+      const testButton = document.createElement('button');
+      testButton.innerHTML = '🔊 Test Sound';
+      testButton.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        padding: 10px;
+        background: #4f46e5;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      `;
+      
+      testButton.addEventListener('click', () => {
+        console.log('Test button clicked');
+        console.log('Audio context state:', soundManager.audioContext ? soundManager.audioContext.state : 'No context');
+        soundManager.enableAudio().then(() => {
+          soundManager.playAction('click');
+          console.log('Test sound triggered');
+        });
+      });
+      
+      document.body.appendChild(testButton);
+      
+      // Remove the button after 30 seconds
+      setTimeout(() => {
+        if (testButton.parentNode) {
+          testButton.parentNode.removeChild(testButton);
+        }
+      }, 30000);
+    }
+    
+    // Add the test button when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', createSoundTestButton);
+    } else {
+      createSoundTestButton();
+    }
+
+    // Add sound effects to all interactive elements
+    function addSoundEffects() {
+      // Add click sounds to clickable elements
+      const clickableElements = document.querySelectorAll('a, button, .cursor-pointer, [role="button"]');
+      
+      clickableElements.forEach(element => {
+        // Skip elements that don't need sounds (like navigation links within same page)
+        if (element.getAttribute('href') && element.getAttribute('href').startsWith('#')) {
+          return; // Skip anchor links
+        }
+
+        // Add click sound
+        element.addEventListener('click', () => {
+          soundManager.playAction('click');
+        });
+
+        // Add hover sound with debouncing to prevent spam
+        let hoverTimeout;
+        element.addEventListener('mouseenter', () => {
+          clearTimeout(hoverTimeout);
+          hoverTimeout = setTimeout(() => {
+            soundManager.playAction('hover');
+          }, 150); // Debounce hover sounds
+        });
+
+        element.addEventListener('mouseleave', () => {
+          clearTimeout(hoverTimeout);
+        });
+      });
+
+      // Add sounds to theme toggle button
+      const themeToggle = document.getElementById('theme-toggle');
+      if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+          soundManager.playAction('click');
+        });
+        
+        themeToggle.addEventListener('mouseenter', () => {
+          setTimeout(() => {
+            soundManager.playAction('hover');
+          }, 150);
+        });
+      }
+
+      // Add sounds to mobile menu toggle
+      const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+      if (mobileMenuToggle) {
+        mobileMenuToggle.addEventListener('click', () => {
+          soundManager.playAction('click');
+        });
+        
+        mobileMenuToggle.addEventListener('mouseenter', () => {
+          setTimeout(() => {
+            soundManager.playAction('hover');
+          }, 150);
+        });
+      }
+
+      // Add sounds to GitLab activity grid elements
+      const gitlabDays = document.querySelectorAll('.gitlab-day');
+      gitlabDays.forEach(day => {
+        day.addEventListener('click', () => {
+          soundManager.playAction('click');
+        });
+
+        day.addEventListener('mouseenter', () => {
+          setTimeout(() => {
+            soundManager.playAction('hover');
+          }, 150);
+        });
+      });
+    }
+
+    // Initialize sound effects when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      // Wait a bit for all elements to be rendered
+      setTimeout(() => {
+        addSoundEffects();
+      }, 100);
+    });
+
+    // Re-initialize sounds when content is updated (for dynamic content)
+    const observer = new MutationObserver(() => {
+      // Check if new interactive elements were added
+      const newElements = document.querySelectorAll('a, button, .cursor-pointer, [role="button"]');
+      newElements.forEach(element => {
+        if (!element.hasAttribute('data-sound-added')) {
+          element.setAttribute('data-sound-added', 'true');
+          
+          element.addEventListener('click', () => {
+            soundManager.playAction('click');
+          });
+
+          let hoverTimeout;
+          element.addEventListener('mouseenter', () => {
+            clearTimeout(hoverTimeout);
+            hoverTimeout = setTimeout(() => {
+              soundManager.playAction('hover');
+            }, 150);
+          });
+
+          element.addEventListener('mouseleave', () => {
+            clearTimeout(hoverTimeout);
+          });
+        }
+      });
+    });
+
+    // Start observing for new elements
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  </script>
 </body>
 
 </html>
