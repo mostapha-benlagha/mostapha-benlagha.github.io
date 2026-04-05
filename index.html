@@ -107,7 +107,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;cursor:none!important}
 :root{
   --bg:#0a0a08;--surface:#111110;--surface2:#161614;
   --border:#222220;--dim:#2e2e2b;
@@ -267,6 +267,19 @@ footer{border-top:1px solid var(--border);padding:100px 56px 72px;display:grid;g
 .cur{width:8px;height:8px;background:var(--accent);border-radius:50%;position:fixed;pointer-events:none;z-index:9997;mix-blend-mode:difference}
 .crn{width:36px;height:36px;border:1px solid rgba(200,240,77,.35);border-radius:50%;position:fixed;pointer-events:none;z-index:9996}
 
+/* ── THEME TOGGLE ── */
+.nr{display:flex;align-items:center;gap:12px}
+.th-tog{display:inline-flex;align-items:center;border:1px solid rgba(200,240,77,.14);border-radius:100px;padding:3px;cursor:pointer;position:relative;background:rgba(255,255,255,.03);transition:border-color .25s;flex-shrink:0;outline:none}
+.th-tog:hover{border-color:rgba(200,240,77,.35)}
+.th-pip{position:absolute;top:3px;left:3px;width:62px;height:calc(100% - 6px);background:rgba(255,255,255,.1);border-radius:100px;transition:transform .38s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+.th-s{display:flex;align-items:center;justify-content:center;gap:5px;width:62px;height:26px;font-family:var(--font-m);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);position:relative;z-index:1;transition:color .25s;user-select:none}
+.th-s.on{color:var(--text)}
+
+/* Page-transition curtain */
+#th-ov{position:fixed;inset:0;z-index:9999;background:#F2EFE9;transform:translateY(100%);transition:transform .62s cubic-bezier(.76,0,.24,1);pointer-events:none}
+#th-ov.drop{transform:translateY(0);pointer-events:all}
+#th-ov.lift{transform:translateY(-100%)}
+
 @media(max-width:900px){
   nav{padding:16px 24px}
   .nm,.nc{display:none}
@@ -313,7 +326,14 @@ footer{border-top:1px solid var(--border);padding:100px 56px 72px;display:grid;g
     <li><a href="#education">Education</a></li>
     <li><a href="#contact">Contact</a></li>
   </ul>
-  <a href="Mostapha_benlagha_resume.pdf" class="nc" target="_blank" download>Resume ↓</a>
+  <div class="nr">
+    <button class="th-tog" id="th-tog" aria-label="Switch to light theme">
+      <span class="th-pip" id="th-pip"></span>
+      <span class="th-s on" id="th-dk">☽ Dark</span>
+      <span class="th-s" id="th-lt">☀ Light</span>
+    </button>
+    <a href="Mostapha_benlagha_resume.pdf" class="nc" target="_blank" download>Resume ↓</a>
+  </div>
 </nav>
 
 <!-- HERO -->
@@ -706,6 +726,7 @@ footer{border-top:1px solid var(--border);padding:100px 56px 72px;display:grid;g
   </div>
 </footer>
 
+<div id="th-ov"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://unpkg.com/lenis@1.3.21/dist/lenis.min.js"></script>
@@ -932,6 +953,50 @@ if (fcta) {
     scrollTrigger: { trigger: fcta, start: 'top 85%', once: true }
   });
 }
+</script>
+<script>
+/* ── THEME SWITCHER ── */
+(function(){
+  const ov  = document.getElementById('th-ov');
+  const pip = document.getElementById('th-pip');
+  const dkS = document.getElementById('th-dk');
+  const ltS = document.getElementById('th-lt');
+
+  /* Coming back from index2 → reveal page (curtain lifts upward) */
+  if(sessionStorage.getItem('th-from') === '2'){
+    sessionStorage.removeItem('th-from');
+    /* Place curtain covering screen with no transition */
+    ov.style.transition = 'none';
+    ov.classList.add('drop');
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      ov.style.transition = '';
+      ov.classList.replace('drop','lift');
+    }));
+    /* Restore section */
+    const sec = sessionStorage.getItem('th-sec');
+    if(sec){ sessionStorage.removeItem('th-sec'); setTimeout(()=>{ const el=document.querySelector(sec); if(el) el.scrollIntoView({block:'start'}); },320); }
+  }
+
+  /* Click → animate pip to "Light" side, drop curtain, navigate */
+  document.getElementById('th-tog').addEventListener('click', ()=>{
+    /* Save visible section */
+    let saved = '';
+    document.querySelectorAll('section[id]').forEach(s=>{
+      const r = s.getBoundingClientRect();
+      if(!saved && r.top <= 120 && r.bottom > 0) saved = '#'+s.id;
+    });
+    if(saved) sessionStorage.setItem('th-sec', saved);
+    sessionStorage.setItem('th-from','1');
+
+    /* Animate toggle to light side */
+    ltS.classList.add('on'); dkS.classList.remove('on');
+    pip.style.transform = 'translateX(62px)';
+
+    /* Drop cream curtain then navigate */
+    ov.classList.add('drop');
+    setTimeout(()=>{ window.location.href = 'index2.html'; }, 660);
+  });
+})();
 </script>
 </body>
 </html>
